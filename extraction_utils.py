@@ -1,16 +1,17 @@
 import numpy as np
 import pandas as pd
 
+
 def dataset_structure(path,
                       dataset_filename='TestDB.npz',
                       gt_path=None,
                       users=None):
     """Builds a dictionary with the lifelog structure.
-    Input: 
+    Input:
         path to dataset
         filename where the dictionary will be stored
         path to the GT (if available)
-        id of the users to include    
+        id of the users to include
     Returns:
         dictionary with structure
         dataset = {'path': path,
@@ -42,8 +43,8 @@ def dataset_structure(path,
                        'users': {0: {'id': '',
                                      'days': {0: {'date': ''}}}}}
         else:
-            """Modify this code according to your dataset folder structure"""
-            dataset = {'users': {i : {'id': 'user'+str(i)} for i in users}}
+            raise('WARNING: Modify this code four your DB folder structure!')
+            dataset = {'users': {i: {'id': 'user' + str(i)} for i in users}}
             for u, user in dataset['users'].items():
                 days = {i: {'date': day} for i, day in
                         enumerate(os.listdir(dataset['path'] + user['id']))}
@@ -54,17 +55,17 @@ def dataset_structure(path,
                 frames = dataset['users'][u]['days'][d]
                 day_path = dataset['path'] + user['id'] + '/' + day['date']
                 images = [im for im in os.listdir(day_path) if
-                          im.endswith(".jpg") and not 
+                          im.endswith(".jpg") and not
                           im.startswith(".") and not
-                          im.endswith("(1).jpg") ]
+                          im.endswith("(1).jpg")]
                 im = {i: im for i, im in enumerate(sorted(images))}
                 frames['images'] = im
                 if gt_path is not None:
                     frames['GT'] = {i: gt for i, gt in
-                                   zip(im.keys(),
-                                       find_gt_from_file(gt_path,
-                                                         frames['date'],
-                                                         im.values()))}
+                                    zip(im.keys(),
+                                        find_gt_from_file(gt_path,
+                                                          frames['date'],
+                                                          im.values()))}
         np.savez(path + dataset_filename, dataset=dataset)
     return dataset
 
