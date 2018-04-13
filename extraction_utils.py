@@ -1,7 +1,167 @@
 import numpy as np
+import pandas as pd
+
+def dataset_structure(path,
+                      dataset_filename='TestDB.npz',
+                      gt_path=None,
+                      users=None):
+    """Builds a dictionary with the lifelog structure.
+    Input: 
+        path to dataset
+        filename where the dictionary will be stored
+        path to the GT (if available)
+        id of the users to include    
+    Returns:
+        dictionary with structure
+        dataset = {'path': path,
+                   'users': {user_id: {'id': 'folder_name',
+                                       'days': {day_id: day_dict}}}}
+              where day_dict = {'date': 'folder_name',
+                                'GT': {image_id: image_name.jpg},
+                                'images': {image_id: image_name.jpg}}
+    """
+    def find_gt_from_file(pathGT, filename, im):
+        xlsx = False
+        xl = pd.ExcelFile(pathGT + filename + '.xls')
+        df = xl.parse(xl.sheet_names[0])
+        annotations = df.keys()[1:]
+        # only take 1st annotation. ignore others:
+        b = [f+'.jpg' for b in df[annotations[0]]
+             for f in str.split(str(b)) if f != 'nan']
+        gt = (np.isin(im, b))
+        gt[0] = 1
+        gt[-1] = 1
+        return gt.astype(int)
+
+    try:
+        dataset = np.load(path + dataset_filename)['dataset'].item()
+    except IOError as e:
+        print e
+        if users is None:
+            dataset = {'path': path[:-1],
+                       'users': {0: {'id': '',
+                                     'days': {0: {'date': ''}}}}}
+        else:
+            """Modify this code according to your dataset folder structure"""
+            dataset = {'users': {i : {'id': 'user'+str(i)} for i in users}}
+            for u, user in dataset['users'].items():
+                days = {i: {'date': day} for i, day in
+                        enumerate(os.listdir(dataset['path'] + user['id']))}
+                dataset['users'][u]['days'] = days
+
+        for u, user in dataset['users'].items():
+            for d, day in dataset['users'][u]['days'].items():
+                frames = dataset['users'][u]['days'][d]
+                day_path = dataset['path'] + user['id'] + '/' + day['date']
+                images = [im for im in os.listdir(day_path) if
+                          im.endswith(".jpg") and not 
+                          im.startswith(".") and not
+                          im.endswith("(1).jpg") ]
+                im = {i: im for i, im in enumerate(sorted(images))}
+                frames['images'] = im
+                if gt_path is not None:
+                    frames['GT'] = {i: gt for i, gt in
+                                   zip(im.keys(),
+                                       find_gt_from_file(gt_path,
+                                                         frames['date'],
+                                                         im.values()))}
+        np.savez(path + dataset_filename, dataset=dataset)
+    return dataset
+
+
+def extract_data_DB(dataset, rotate=None, return_feat=False):
+    """ Extracts features for testing given a dictionary.
+    Parameters
+    ----------
+    dataset dictionary; format: dataset['users'][u]['days'][d]['images'][i]
+
+    Yields
+    -------
+    u
+    d
+    i
+    gt (zeros if not available)
+    descriptors of images "dataset['users'][u]['days'][d]['images']"
+    """
+    VF = VF_extractor()
+    for u, user in dataset['users'].items():
+        for d, day in user['days'].items():
+            gt = []
+            frames = []
+            features = []
+            print('extracting for day %d' % d)
+            path = dataset['path'] + user['id'] + '/' + day['date']
+            path += ('' if (path[-1] == '/') else '/')
+            try:
+                features = np.load(path + ('featuresDay%d.npz' % d)
+                                   )['features'].item()
+            except IOError as e:
+                print e
+                for i in tqdm(sorted(day['images'].keys())):
+                    im_path = path + day['images'][i]
+                    try:
+                        feat = VF.get_feat(im_path, rotate=rotate)
+                        frames.append(i)
+                        features.append(feat)
+                        if 'GT' in day.keys():
+                            gt.append(day['GT'][i])
+                        else:
+                            gt.append(0)
+                    except Exception as e:
+                        print e, im_path
+                features = np.hstack((np.vstack((u*np.ones(len(frames)),
+                                                 d*np.ones(len(frames)),
+                                                 frames,
+                                                 gt)).T,
+                                      features))
+                np.savez(path + ('featuresDay%d.npz' % d), features=features)
+            if return_feat:
+                yield features
+
+
+class VF_extractor(self):
+    """Class to extract visual features from InceptionV3 """
+    def __init__(self, include_top=False, pooling='max',
+                 target_size=(299, 299)):
+        """Default inputs: 
+            include_top=False,
+            pooling='max',
+            target_size=(299, 299)
+        """
+        from keras.preprocessing import image
+        from keras.applications.inception_v3 import InceptionV3,
+        from keras.applications.inception_v3 import preprocess_input
+        self.model = InceptionV3(include_top=include_top, pooling=pooling)
+        self.target_size = target_size
+
+    def get_feat(self, im_path, rotate=None):
+        """Returns the visual feature given an image path. 
+        Optional input: rotate = 1 for clockwise/ -1 for counterclockwise"""
+        img = image.load_img(img_path, target_size=self.target_size)
+        x = image.img_to_array(img)
+        if rotate is not None:
+            x = np.swapaxes(x[::-rotate], 0, 1)[::rotate]
+        x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)
+
+        return self.model.predict(x)
 
 
 def get_svm_data(shots, desc):
+    """Given the location of the shots, and the visual features,
+    returns the datapoints needed for the SVM  cluster analysis.
+    Inputs:
+        Boundary locations
+        Visual descriptor of the lifelog
+    Returns:
+        betaCV,
+        norm_cut,
+        cluster cross-correlation,
+        calinski_harabaz_score,
+        compactness joined clusters,
+        compactness cluster before boundaries,
+        compactness cluster after boundaries
+    """
     from scipy.spatial.distance import cdist
     from sklearn.metrics import calinski_harabaz_score
     margin = 15

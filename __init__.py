@@ -5,7 +5,6 @@ Created on Thu Dec 21 15:05:11 2017
 If you use this code, please cite our paper 
 "Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams"
 """
-
 import numpy as np
 from keras.layers import Input, RepeatVector, Lambda, concatenate, Reshape
 from keras.layers import LSTM
@@ -14,9 +13,11 @@ from keras.callbacks import TensorBoard, Callback
 from keras.models import model_from_json
 from keras import backend as K
 import h5py
+import cPickle
 
 
-class prunning_SVM(object):    
+class prunning_SVM(object):
+    """Class for SVM supervised pruning"""
     def __init__(self,
                  path_svm='', kernel='poly'):
         self.kernel = kernel
@@ -29,7 +30,7 @@ class prunning_SVM(object):
             print self.path_svm
             self.clf = cPickle.load(fid)
         return self.clf
-            
+
     def get_datapoints(self, shots, desc):
         from .extraction_utils import get_svm_data
         return get_svm_data(shots, desc)
@@ -129,6 +130,7 @@ class seq2seq(object):
 
     def data_provider(self, dataset, batch_size=None,
                       test=False, d=None, u=None, past=False, info=False):
+        """Data provider for model training"""
         N = self.params["timesteps"][0]
         Mth = np.minimum(10, self.params["timesteps"][1])
         if batch_size is None:
