@@ -6,44 +6,58 @@ If you use this code, please cite our paper
 "Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams"
 """
 import numpy as np
-from keras.layers import Input, RepeatVector, Lambda, concatenate, Reshape
-from keras.layers import LSTM
-from keras.models import Model
+from keras.layers import Input, Lambda, LSTM
+from keras.optimizers import RMSprop
+from keras.models import Model, model_from_json
 from keras.callbacks import TensorBoard, Callback
-from keras.models import model_from_json
 from keras import backend as K
+import uuid
 import h5py
 import cPickle
 
 
-class prunning_SVM(object):
-    """Class for SVM supervised pruning"""
+def init_model(model_path, epoch=None):
+    try:
+        params = np.load(model_path + '.npz')['params'].item()
+    except IOError as e:
+        print e
+        params = params_VCP()
+
+    print 'loading VisualContextPredictor model...'
+    model = VCP(params,
+                load_filepath=model_path + '_arch.npz')
+
+    print 'loading weights...'
+    if epoch is None:
+        weights = model_path + '_weights'
+    else:
+        weights = model_path + ('.%d.hdf5' % epoch)
+    model.load_weights(weights)
+
+    print 'Done. Ready to start prediction.'
+    return model, params
+
+
+def params_VCP():
+    """set VCP parameters to reasonable defaults"""
+    params = {'input_dim': [2048],
+              'representation_dim': [1024],
+              'timesteps': (10, 10)}
+
+    params['loss'] = 'mean_squared_error'
+    params['optimizer'] = 'RMSprop'
+    params['batch_size'] = 250
+    params['train_dataset'] = 'train_dataset.h5'
+    params['val_dataset'] = 'val_dataset.h5'
+    params['learning_rate'] = .001
+    params['decay'] = .0
+    params['log_dir'] = '/tmp/' + str(uuid.uuid4())[-5:]
+    return params
+    
+    
+class VCP(object):
     def __init__(self,
-                 path_svm='', kernel='poly'):
-        self.kernel = kernel
-        self.path_svm = path_svm + kernel + 'SVM.pkl'
-        self.clf = None
-
-    def load(self):
-        # load it again
-        with open(self.path_svm, 'rb') as fid:
-            print self.path_svm
-            self.clf = cPickle.load(fid)
-        return self.clf
-
-    def get_datapoints(self, shots, desc):
-        from .extraction_utils import get_svm_data
-        return get_svm_data(shots, desc)
-
-    def predict(self, data):
-        if self.clf is None:
-            self.load()
-        return self.clf.predict(self.get_datapoints(data[0], data[1]))
-
-
-class seq2seq(object):
-    def __init__(self,
-                 params,
+                 params=params_VCP(),
                  save_filepath=None,
                  load_filepath=None):
         self.params = params
@@ -51,8 +65,17 @@ class seq2seq(object):
             timesteps = params['timesteps']
             input_dim = params['input_dim']
             encoding_dim = params['representation_dim']
-            encoding_layers = params['encoding_layers']
-            decoding_layers = params['decoding_layers']
+            
+            encoding_layers = []
+            for n in params['representation_dim'][:-1]:
+                encoding_layers.append(LSTM(n))
+            encoding_layers.append(LSTM(params['representation_dim'][-1],
+                                        return_sequences=True))
+            decoding_layers = []            
+            for n in params['representation_dim'][:-1][::-1]:
+                decoding_layers.append(LSTM(n))
+            decoding_layers.append(LSTM(params['input_dim'],
+                                        return_sequences=True))
     
             # define model placeholders and architecture:
             self.cond_prediction_model(timesteps, input_dim,
@@ -67,6 +90,9 @@ class seq2seq(object):
             self.encoder = model_from_json(arch['encoder'])
             self.predictor = model_from_json(arch['predictor'])
 
+        if params['optimizer'] == 'RMSprop':
+                params['optimizer'] = RMSprop(lr=params['learning_rate'],
+                                              decay=params['decay'])
         # compile the model:
         self.seq_to_seq.compile(optimizer=params["optimizer"],
                                 loss=params["loss"])
@@ -271,6 +297,31 @@ class seq2seq(object):
         self.seq_to_seq.load_weights(filepath, by_name=True)
         self.encoder.load_weights(filepath, by_name=True)
         self.predictor.load_weights(filepath, by_name=True)
+
+
+class prunning_SVM(object):
+    """Class for SVM supervised pruning"""
+    def __init__(self,
+                 path_svm='', kernel='poly'):
+        self.kernel = kernel
+        self.path_svm = path_svm + kernel + 'SVM.pkl'
+        self.clf = None
+
+    def load(self):
+        # load it again
+        with open(self.path_svm, 'rb') as fid:
+            print self.path_svm
+            self.clf = cPickle.load(fid)
+        return self.clf
+
+    def get_datapoints(self, shots, desc):
+        from .extraction_utils import get_svm_data
+        return get_svm_data(shots, desc)
+
+    def predict(self, data):
+        if self.clf is None:
+            self.load()
+        return self.clf.predict(self.get_datapoints(data[0], data[1]))
 
 
 class EarlyStoppingTH(Callback):
