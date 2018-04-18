@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import argrelmax
+from scipy.spatial.distance import cosine
 
 
 def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
@@ -14,12 +15,21 @@ def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
     """
     # at time t, we want the difference between context from the past at t-1
     # and context from the future at t+1:
-    signal = np.abs(embedded_seqFfromP[:-2] - embedded_seqPfromF[2:])
+    signal = np.array([cosine(a, b) for 
+                       (a, b) in zip(embedded_seqFfromP[:-2],
+                                     embedded_seqPfromF[2:])])
+
+    # First and last context predictions will be noisy, better to ignore:
+    signal[0] = 0
+    signal[-1] = 0
+
     local_max = argrelmax(signal, order=order)[0]
     th = np.mean(signal[local_max])
     prediction = np.zeros(len(signal))
-    prediction[local_max[local_max > th]] = 1
-    # First and last frames are always event boundaries:
+    prediction[local_max[signal[local_max] > th]] = 1
+
+    # First and last frames are always event boundaries 
+    # (context prediction goes from t=1 to t=N-1):
     return np.hstack((1, prediction, 1))
 
 
@@ -34,9 +44,9 @@ def get_visual_context(model, params, features):
         visual context given the past
         visual context given the future
     """
-    sequencePtoF = np.array([features[:, 4:][:-1]])
-    sequenceFtoP = np.array([features[::-1, 4:][:-1]])
-    info = features[:, :4]
+    sequencePtoF = np.array([features[:-1]])
+    sequenceFtoP = np.array([features[::-1][:-1]])
+
     """ Future: """
     embedded_seqF = model.embed_sequence(sequencePtoF)[0]
     embedded_seqFfromP = np.pad(embedded_seqF, (0, 1), 'reflect')
@@ -44,7 +54,7 @@ def get_visual_context(model, params, features):
     embedded_seqP = model.embed_sequence(sequenceFtoP)[0]
     embedded_seqPfromF = np.pad(embedded_seqP, (0, 1), 'reflect')[::-1]
 
-    return info, embedded_seqFfromP, embedded_seqPfromF
+    return embedded_seqFfromP, embedded_seqPfromF
 
 
 class evaluation_measures(object):
@@ -72,6 +82,7 @@ class evaluation_measures(object):
             self.reset(y_pred=y_pred, y_gt=y_gt)
         else:
             y_gt = self.y_gt
+            y_gt[-1] = 1
             y_pred = self.y_pred
         """validate input:"""
         if len(y_pred) == len(y_gt) and max(y_pred) < 2 and max(y_gt) < 2 and \
