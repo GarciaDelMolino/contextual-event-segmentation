@@ -1,6 +1,10 @@
+from keras.preprocessing import image
+from keras.applications.inception_v3 import InceptionV3
+from keras.applications.inception_v3 import preprocess_input
 import numpy as np
 import pandas as pd
-
+import os
+from tqdm import tqdm
 
 def dataset_structure(path,
                       dataset_filename='TestDB.npz',
@@ -22,22 +26,19 @@ def dataset_structure(path,
                                 'images': {image_id: image_name.jpg}}
     """
     def find_gt_from_file(pathGT, filename, im):
-        xlsx = False
         xl = pd.ExcelFile(pathGT + filename + '.xls')
         df = xl.parse(xl.sheet_names[0])
         annotations = df.keys()[1:]
         # only take 1st annotation. ignore others:
-        b = [f+'.jpg' for b in df[annotations[0]]
-             for f in str.split(str(b)) if f != 'nan']
+        b = [str.split(str(b))[0] +'.jpg' for 
+             b in df[annotations[0]] if str.split(str(b))[0] != 'nan']
         gt = (np.isin(im, b))
-        gt[0] = 1
-        gt[-1] = 1
         return gt.astype(int)
 
     try:
         dataset = np.load(path + dataset_filename)['dataset'].item()
     except IOError as e:
-        print e
+        print e, '... ongoing'
         if users is None:
             dataset = {'path': path[:-1],
                        'users': {0: {'id': '',
@@ -93,34 +94,40 @@ def extract_data_DB(dataset, rotate=None, return_feat=False):
             print('extracting for day %d' % d)
             path = dataset['path'] + user['id'] + '/' + day['date']
             path += ('' if (path[-1] == '/') else '/')
+            filename = path + ('featuresDay%d.npz' % d)                                   
             try:
-                features = np.load(path + ('featuresDay%d.npz' % d)
-                                   )['features'].item()
+                features = np.load(filename)['features']
             except IOError as e:
                 print e
                 for i in tqdm(sorted(day['images'].keys())):
                     im_path = path + day['images'][i]
                     try:
                         feat = VF.get_feat(im_path, rotate=rotate)
-                        frames.append(i)
-                        features.append(feat)
+                        frames.append(i)  
+                        # Normalize the features to be in the range [0, 1]:
+                        features.append((feat - np.min(feat))/(
+                                        np.max(feat) - np.min(feat)))
                         if 'GT' in day.keys():
                             gt.append(day['GT'][i])
                         else:
                             gt.append(0)
                     except Exception as e:
                         print e, im_path
-                features = np.hstack((np.vstack((u*np.ones(len(frames)),
-                                                 d*np.ones(len(frames)),
-                                                 frames,
-                                                 gt)).T,
-                                      features))
-                np.savez(path + ('featuresDay%d.npz' % d), features=features)
+                try:
+                    feat = np.array(features)[:, 0, :]
+                    features = np.hstack((np.vstack((u*np.ones(len(frames)),
+                                                     d*np.ones(len(frames)),
+                                                     frames,
+                                                     gt)).T,
+                                          feat))
+                except ValueError as e:
+                    raise(e)
+                np.savez(filename, features=features)
             if return_feat:
                 yield features
 
 
-class VF_extractor(self):
+class VF_extractor():
     """Class to extract visual features from InceptionV3 """
     def __init__(self, include_top=False, pooling='max',
                  target_size=(299, 299)):
@@ -129,16 +136,13 @@ class VF_extractor(self):
             pooling='max',
             target_size=(299, 299)
         """
-        from keras.preprocessing import image
-        from keras.applications.inception_v3 import InceptionV3,
-        from keras.applications.inception_v3 import preprocess_input
         self.model = InceptionV3(include_top=include_top, pooling=pooling)
         self.target_size = target_size
 
     def get_feat(self, im_path, rotate=None):
         """Returns the visual feature given an image path. 
         Optional input: rotate = 1 for clockwise/ -1 for counterclockwise"""
-        img = image.load_img(img_path, target_size=self.target_size)
+        img = image.load_img(im_path, target_size=self.target_size)
         x = image.img_to_array(img)
         if rotate is not None:
             x = np.swapaxes(x[::-rotate], 0, 1)[::rotate]
