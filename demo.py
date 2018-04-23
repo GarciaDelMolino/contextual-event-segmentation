@@ -49,7 +49,7 @@ for i, path in enumerate(paths):
                               scores.get_precision(),
                               scores.get_recall()])
 
-    print i, 'performance in terms of FM, P, R:', all_scores[(u, d)]
+    print i, 'performance in terms of FM, P, R:', all_scores[i]
 
 print 'mean performance in terms of FM, P, R:',
 print np.mean(all_scores.values(), axis=0)

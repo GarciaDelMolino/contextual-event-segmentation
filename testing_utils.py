@@ -49,10 +49,11 @@ def get_visual_context(model, params, features):
 
     """ Future: """
     embedded_seqF = model.embed_sequence(sequencePtoF)[0]
-    embedded_seqFfromP = np.pad(embedded_seqF, (0, 1), 'reflect')
+    embedded_seqFfromP = np.pad(embedded_seqF, ((0, 1), (0, 0)), 'reflect')
     """ Past: """
     embedded_seqP = model.embed_sequence(sequenceFtoP)[0]
-    embedded_seqPfromF = np.pad(embedded_seqP, (0, 1), 'reflect')[::-1]
+    embedded_seqPfromF = np.pad(embedded_seqP,
+                                ((0, 1), (0, 0)), 'reflect')[::-1]
 
     return embedded_seqFfromP, embedded_seqPfromF
 
