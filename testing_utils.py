@@ -3,6 +3,31 @@ from scipy.signal import argrelmax
 from scipy.spatial.distance import cosine
 
 
+def get_visual_context(model, params, features):
+    """Predict the visual context at each timestep.
+    Inputs:
+        model
+        params
+        features [user, day, frame, gt, visual_feat]
+    Output:
+        [user, day, frame, gt]
+        visual context given the past
+        visual context given the future
+    """
+    sequencePtoF = np.array([features[:-1]])
+    sequenceFtoP = np.array([features[::-1][:-1]])
+
+    """ Future: """
+    embedded_seqF = model.embed_sequence(sequencePtoF)[0]
+    embedded_seqFfromP = np.pad(embedded_seqF, ((0, 1), (0, 0)), 'reflect')
+    """ Past: """
+    embedded_seqP = model.embed_sequence(sequenceFtoP)[0]
+    embedded_seqPfromF = np.pad(embedded_seqP,
+                                ((0, 1), (0, 0)), 'reflect')[::-1]
+
+    return embedded_seqFfromP, embedded_seqPfromF
+
+
 def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
     """Predicts the event boundaries at time t given
     the past and future visual context.
@@ -33,31 +58,6 @@ def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
     return np.hstack((1, prediction, 1))
 
 
-def get_visual_context(model, params, features):
-    """Predict the visual context at each timestep.
-    Inputs:
-        model
-        params
-        features [user, day, frame, gt, visual_feat]
-    Output:
-        [user, day, frame, gt]
-        visual context given the past
-        visual context given the future
-    """
-    sequencePtoF = np.array([features[:-1]])
-    sequenceFtoP = np.array([features[::-1][:-1]])
-
-    """ Future: """
-    embedded_seqF = model.embed_sequence(sequencePtoF)[0]
-    embedded_seqFfromP = np.pad(embedded_seqF, ((0, 1), (0, 0)), 'reflect')
-    """ Past: """
-    embedded_seqP = model.embed_sequence(sequenceFtoP)[0]
-    embedded_seqPfromF = np.pad(embedded_seqP,
-                                ((0, 1), (0, 0)), 'reflect')[::-1]
-
-    return embedded_seqFfromP, embedded_seqPfromF
-
-
 class evaluation_measures(object):
     def __init__(self, TP=0, FP=0, TN=0, FN=0, y_pred=None, y_gt=None, win=5):
         self.reset(TP=TP, FP=FP, TN=TN, FN=FN,
@@ -77,6 +77,24 @@ class evaluation_measures(object):
             self.win = win
         self.recall = None
         self.precision = None
+
+    def reset_clusters(self, TP=0, FP=0, TN=0, FN=0,
+                       y_pred=None, y_gt=None):
+        self.reset(y_pred=y_pred, y_gt=y_gt)
+        """validate input:"""
+        if y_pred.ndim == 2 and max(y_gt) < 2 and np.sum(y_gt == 0) > 1:
+            gt = np.cumsum(y_gt*(1 - np.hstack((y_gt[1:], 1))), dtype=int)
+        else:
+            raise ValueError('y_gt should be an array of 1/0, and y_pred location tuples in array form')
+        events = np.empty(0)
+        for a, b in y_pred:
+            e = np.unique(gt[min(a+self.win,
+                                 max(a, b-self.win-1)):
+                             max(b-self.win, min(b, a+self.win+1))])
+            self.FN += len(e)-1
+            events = np.hstack((events, e))
+        self.TP = len(np.unique(events))
+        self.FP = len(events) - self.TP
 
     def scores(self, y_pred=None, y_gt=None, total_frames=None):
         if y_pred is not None and y_gt is not None:

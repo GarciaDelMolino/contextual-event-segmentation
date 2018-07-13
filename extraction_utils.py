@@ -1,9 +1,12 @@
 from keras.preprocessing import image
 from keras.applications.inception_v3 import InceptionV3
 from keras.applications.inception_v3 import preprocess_input
+from scipy.spatial.distance import cdist
+from scipy.cluster.vq import kmeans2
 import numpy as np
 import pandas as pd
 import os
+import cv2
 from tqdm import tqdm
 
 def dataset_structure(path,
@@ -71,6 +74,31 @@ def dataset_structure(path,
     return dataset
 
 
+class VF_extractor():
+    """Class to extract visual features from InceptionV3 """
+    def __init__(self, include_top=False, pooling='max',
+                 target_size=(299, 299)):
+        """Default inputs: 
+            include_top=False,
+            pooling='max',
+            target_size=(299, 299)
+        """
+        self.model = InceptionV3(include_top=include_top, pooling=pooling)
+        self.target_size = target_size
+
+    def get_feat(self, im_path, rotate=None):
+        """Returns the visual feature given an image path. 
+        Optional input: rotate = 1 for clockwise/ -1 for counterclockwise"""
+        img = image.load_img(im_path, target_size=self.target_size)
+        x = image.img_to_array(img)
+        if rotate is not None:
+            x = np.swapaxes(x[::-rotate], 0, 1)[::rotate]
+        x = np.expand_dims(x, axis=0)
+        x = preprocess_input(x)
+
+        return self.model.predict(x)
+
+
 def extract_data_DB(dataset, rotate=None, return_feat=False):
     """ Extracts features for testing given a dictionary.
     Parameters
@@ -125,31 +153,6 @@ def extract_data_DB(dataset, rotate=None, return_feat=False):
                 np.savez(filename, features=features)
             if return_feat:
                 yield features
-
-
-class VF_extractor():
-    """Class to extract visual features from InceptionV3 """
-    def __init__(self, include_top=False, pooling='max',
-                 target_size=(299, 299)):
-        """Default inputs: 
-            include_top=False,
-            pooling='max',
-            target_size=(299, 299)
-        """
-        self.model = InceptionV3(include_top=include_top, pooling=pooling)
-        self.target_size = target_size
-
-    def get_feat(self, im_path, rotate=None):
-        """Returns the visual feature given an image path. 
-        Optional input: rotate = 1 for clockwise/ -1 for counterclockwise"""
-        img = image.load_img(im_path, target_size=self.target_size)
-        x = image.img_to_array(img)
-        if rotate is not None:
-            x = np.swapaxes(x[::-rotate], 0, 1)[::rotate]
-        x = np.expand_dims(x, axis=0)
-        x = preprocess_input(x)
-
-        return self.model.predict(x)
 
 
 def get_svm_data(shots, desc):
@@ -230,3 +233,68 @@ def get_svm_data(shots, desc):
     (betaCV, norm_cut) = betaCV_normCut()
 
     return np.array([betaCV, norm_cut, d1, ch, c, c0, c1]).T
+
+
+def get_color_assessment(image, centroids, convert=None, th=75):
+    """ Color diversity score: the highest the better"""
+    if convert is not None:
+        image = cv2.cvtColor(image, convert)
+    a = np.reshape(image, [np.prod(image.shape[:2]), image.shape[2]])
+
+    #cluster to quantize colors:
+    color, label = kmeans2(a.astype('float64'), centroids, iter=3)
+
+    #merge clusters whose centroids are too close:
+    cd = cdist(color, color).astype(int)
+    for lx in np.array(np.where((cd < th) & (cd > 0))).T:
+        label[label == lx[1]] = lx[0]
+
+    return 1 - max(np.histogram(label,
+                                bins=range(len(color)+1)
+                                )[0]).astype(float)/len(a)
+
+
+def get_blurriness_assessment(image, convert=None):
+    """ Sharpness score: the highest the better"""
+    if convert is not None:
+        image = cv2.cvtColor(image, convert)
+    return cv2.Laplacian(image, cv2.CV_64F).var()
+
+
+def get_noise_assessment(im, convert=cv2.COLOR_BGR2Lab):
+    """ Assesses similarity (1-euclidean) between image and denoised.
+    The highest, the better"""
+    im = cv2.cvtColor(im, convert)
+    out = cv2.fastNlMeansDenoisingColored(im)
+    out = cv2.cvtColor(out, cv2.COLOR_Lab2RGB)/255.
+    im = cv2.cvtColor(im, cv2.COLOR_Lab2RGB)/255.
+    return np.mean(1 - np.sum((im-out)**2, axis=2)**.5)
+
+
+def quality_assessment(images,
+                       path='',
+                       color=get_color_assessment,
+                       blurr=get_blurriness_assessment,
+                       noise=get_noise_assessment):
+    if color is not None:
+        x, y, z = np.meshgrid(np.linspace(0, 180, 8+1)[:-1], [128], [128])
+        centroids = np.array([x.flatten(), y.flatten(), z.flatten()]).T
+        x, y, z = np.meshgrid(np.linspace(0, 180, 2+1)[:-1], [25, 230], [10])
+        centroids = np.vstack((centroids,
+                               np.array([x.flatten(),
+                                         y.flatten(),
+                                         z.flatten()]).T))
+    quality = {}
+    for img in images:
+        im = cv2.imread(path + img)
+        quality[img] = {}
+        if color is not None:
+            quality[img]['color'] = color(im,
+                                          centroids,
+                                          convert=cv2.COLOR_BGR2HLS)
+        if blurr is not None:
+            quality[img]['blurriness'] = blurr(im,
+                                               convert=cv2.COLOR_BGR2GRAY)
+        if noise is not None:
+            quality[img]['noise'] = noise(im, convert=cv2.COLOR_BGR2Lab)
+    return quality
