@@ -2,10 +2,8 @@
 Created on Fri Apr 13 00:00:00 2018
 
 @author: ana
-If you use this code, please cite our paper 
-Ana García del Molino, Joo-Hwee Lim, and Ah-Hwee Tan. 2018.
+If you use this code, please cite our paper
 "Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams"
-In Proceedings of ACM Multimedia conference (ACMMM’18). ACM, New York, NY, USA.
 """
 import numpy as np
 from keras.layers import Input, Lambda, LSTM
