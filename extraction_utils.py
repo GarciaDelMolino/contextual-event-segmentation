@@ -15,7 +15,7 @@ def dataset_structure(path,
                       users=None):
     """Builds a dictionary with the lifelog structure.
     Input:
-        path to dataset
+        absolute path to dataset
         filename where the dictionary will be stored
         path to the GT (if available)
         id of the users to include
