@@ -10,7 +10,7 @@ The repository is organized as follows:
 - `testing_utils.py`: functions to extract the visual context from the testing data, find the event boundaries, and evaluate the event segmentation.
 
 
-The data used to train the model, as well as the model weights, can be found [here](http://dx.doi.org/10.17632/ktps5my69g.1).
+The data used to train the model, as well as the model weights, can be found [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea).
 
 ## Citation:
 If you found this code or the R3 dataset useful, please cite the following publication:
@@ -21,7 +21,7 @@ If you found this code or the R3 dataset useful, please cite the following publi
 
 ## Steps to reproduce:
 1. Clone this repo, create a `test_data` folder within it, and extract [this test lifelog and GT from EDUB-Seg](https://drive.google.com/open?id=1vBDdLR1IUXOSMB2p1gUlxpB5bJVW0fvE) to it.
-2. Download the model architecture and weights [here](http://dx.doi.org/10.17632/ktps5my69g.1)
+2. Download the model architecture and weights [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea)
 3. Change `PATH_VCP` in L. 15 of `demo.py` to match the location of your downloaded model architecture and weights.
 4. Run `demo.py`
 
