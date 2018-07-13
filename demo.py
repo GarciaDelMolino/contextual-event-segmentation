@@ -8,7 +8,7 @@ If you use this code, please cite our paper
 from extraction_utils import dataset_structure, extract_data_DB
 from testing_utils import get_visual_context, boundary_prediction
 from testing_utils import evaluation_measures
-from models import init_model
+from CES import init_model
 from keras import backend as K
 import numpy as np
 PATH_VCP = '/home/ana/models/VCP'

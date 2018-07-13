@@ -3,7 +3,9 @@ Created on Fri Apr 13 00:00:00 2018
 
 @author: ana
 If you use this code, please cite our paper 
+Ana García del Molino, Joo-Hwee Lim, and Ah-Hwee Tan. 2018.
 "Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams"
+In Proceedings of ACM Multimedia conference (ACMMM’18). ACM, New York, NY, USA.
 """
 import numpy as np
 from keras.layers import Input, Lambda, LSTM
@@ -14,6 +16,7 @@ from keras import backend as K
 import uuid
 import h5py
 import cPickle
+import warnings
 
 
 def init_model(model_path, epoch=None):
@@ -47,8 +50,8 @@ def params_VCP():
     params['loss'] = 'mean_squared_error'
     params['optimizer'] = 'RMSprop'
     params['batch_size'] = 250
-    params['train_dataset'] = 'train_dataset.h5'
-    params['val_dataset'] = 'val_dataset.h5'
+    params['train_dataset'] = 'R3training.h5'
+    params['val_dataset'] = 'R3testing_valSet.h5'
     params['learning_rate'] = .001
     params['decay'] = .0
     params['log_dir'] = '/tmp/' + str(uuid.uuid4())[-5:]
@@ -342,7 +345,6 @@ class EarlyStoppingTH(Callback):
     """
     def __init__(self, monitor='val_loss',
                  th=.1, patience=0, verbose=0, mode='auto'):
-        import warnings
         super(EarlyStoppingTH, self).__init__()
 
         self.monitor = monitor
@@ -392,4 +394,5 @@ class EarlyStoppingTH(Callback):
 
     def on_train_end(self, logs=None):
         if self.stopped_epoch > 0 and self.verbose > 0:
-            print('Epoch %05d: early stopping' % (self.stopped_epoch + 1))
+            print('Epoch %05d: early stopping' % (self.stopped_epoch + 1))# -*- coding: utf-8 -*-
+
