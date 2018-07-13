@@ -5,7 +5,7 @@ This repository includes the functions needed to run Contextual Event Segmentati
 The repository is organized as follows:
 
 - `demo.py`: full demo pipeline to test one sample data.
-- `__init__.py`: `class VCP` to load, train and test the model, with `init_model` and `params_VCP` definition; `prunning_SVM` model; and training callback `EarlyStoppingTH`.
+- `__init__.py`: `class VCP` to load, train and test the Visual Context Prediction model, with `init_model` and `params_VCP` definition; `prunning_SVM` model; and training callback `EarlyStoppingTH`.
 - `extraction_utils.py`: method `VF_extractor` to extract the visual features from `InceptionV3`; functions to create the dataset from a folder of images and extract the visual features;  functions to extract training and testing data for the `prunning_SVM` model.
 - `testing_utils.py`: functions to extract the visual context from the testing data, find the event boundaries, and evaluate the event segmentation.
 
