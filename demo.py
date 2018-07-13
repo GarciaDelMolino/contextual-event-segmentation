@@ -7,12 +7,12 @@ If you use this code, please cite our paper
 """
 from extraction_utils import dataset_structure, extract_data_DB
 from testing_utils import get_visual_context, boundary_prediction
-from testing_utils import evaluation_measures
+from testing_utils import evaluation_measures, write_csv
 from CES import init_model
 from keras import backend as K
 import numpy as np
 PATH_VCP = '/home/ana/models/VCP'
-DATA_PATH = 'test_data/'
+DATA_PATH = '/home/ana/CES/test_data/'
 
 K.clear_session()
 model, params = init_model(PATH_VCP)
@@ -42,6 +42,9 @@ for i, path in enumerate(paths):
     prediction = boundary_prediction(embedded_seqFfromP,
                                      embedded_seqPfromF,
                                      order=5)
+
+    """ Write event frames in csv: """
+    write_csv(path + "/events.csv", prediction, info, dataset)
 
     """ Evaluate the performance: """
     scores.reset(y_pred=prediction, y_gt=info[:, 3])

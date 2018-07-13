@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.signal import argrelmax
 from scipy.spatial.distance import cosine
+import csv
+import pandas as pd
 
 
 def get_visual_context(model, params, features):
@@ -40,7 +42,7 @@ def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
     """
     # at time t, we want the difference between context from the past at t-1
     # and context from the future at t+1:
-    signal = np.array([cosine(a, b) for 
+    signal = np.array([cosine(a, b) for
                        (a, b) in zip(embedded_seqFfromP[:-2],
                                      embedded_seqPfromF[2:])])
 
@@ -56,6 +58,39 @@ def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
     # First and last frames are always event boundaries 
     # (context prediction goes from t=1 to t=N-1):
     return np.hstack((1, prediction, 1))
+
+
+def write_csv(dest_file, prediction, info, dataset):
+    frames = info[:, 2]
+    (u, d) = info[0, :2]
+    data = dataset['users'][u]['days'][d]
+    b = frames[prediction == 1].astype(int)
+    with open(dest_file, 'wb') as csvfile:
+        writer = csv.writer(csvfile, lineterminator='\n')
+        [writer.writerow(['event%d' % n] + [data['images'][a]
+                                            for a in range(i, e)])
+         for n, (i, e) in enumerate(zip(b[:-1], b[1:]))]
+
+
+def read_csv_results(result_file, data):
+    """return the prediction vector for a csv result file
+    Parameters:
+    result_filename.csv
+    dataset['users'][u]['days'][d]
+
+    Returns:
+    prediction vector (boolean)
+    """
+    df = pd.read_csv(result_file,
+                     index_col=False,
+                     usecols=[0, 1],
+                     header=None)
+    bound = [s.strip() for s in (df.iloc[:, 1].values)]
+    pred = np.array([(data['images'][i] in bound)
+                     for i in sorted(data['images'].keys())])
+    pred[0] = 1
+    pred[-1] = 1
+    return pred
 
 
 class evaluation_measures(object):
