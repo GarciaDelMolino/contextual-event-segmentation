@@ -30,13 +30,15 @@ def get_visual_context(model, params, features):
     return embedded_seqFfromP, embedded_seqPfromF
 
 
-def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
+def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF,
+                        order=5, level=1):
     """Predicts the event boundaries at time t given
     the past and future visual context.
     Inputs:
         visual context given the past
         visual context given the future
         order=size of the window for the local maxima  
+        level=hierarchy level for the event segmentation
     Output:
         prediction vector (1/0)
     """
@@ -52,6 +54,8 @@ def boundary_prediction(embedded_seqFfromP, embedded_seqPfromF, order=5):
 
     local_max = argrelmax(signal, order=order)[0]
     th = np.mean(signal[local_max])
+    if level != 1:
+        th += (1-level)*np.std(signal[local_max])
     prediction = np.zeros(len(signal))
     prediction[local_max[signal[local_max] > th]] = 1
 
