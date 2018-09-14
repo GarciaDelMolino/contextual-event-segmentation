@@ -113,7 +113,6 @@ def extract_data_DB(dataset, rotate=None, return_feat=False):
     gt (zeros if not available)
     descriptors of images "dataset['users'][u]['days'][d]['images']"
     """
-    VF = VF_extractor()
     for u, user in dataset['users'].items():
         for d, day in user['days'].items():
             gt = []
@@ -127,6 +126,8 @@ def extract_data_DB(dataset, rotate=None, return_feat=False):
                 features = np.load(filename)['features']
             except IOError as e:
                 print e
+                if 'VF' not in locals():
+                    VF = VF_extractor()
                 for i in tqdm(sorted(day['images'].keys())):
                     im_path = path + day['images'][i]
                     try:
