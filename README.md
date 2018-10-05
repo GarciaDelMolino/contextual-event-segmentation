@@ -4,17 +4,19 @@ This repository includes the functions needed to run Contextual Event Segmentati
 
 The data used to train the model, as well as the model weights, can be found [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea).
 
+
 ## Steps to reproduce:
 1. Clone this repo, create a `test_data` folder within it, and extract [this test lifelog and GT from EDUB-Seg](https://drive.google.com/open?id=1vBDdLR1IUXOSMB2p1gUlxpB5bJVW0fvE) to it.
 2. Download the model architecture and weights [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea)
-3. Change `PATH_VCP` in L. 15 of `demo.py` to match the location of your downloaded model architecture and weights.
+3. Change `PATH_VCP` in `demo.py` to match the location of your downloaded model architecture and weights.
 4. Run `demo.py`
 
 ### How to execute CES on your own lifelog(s):
-Instructions can be found in [this Wiki page](https://github.com/GarciaDelMolino/CES/wiki/How-to-execute-CES-on-your-own-lifelog(s))
+If you want to execute CES on your own lifelogs (the images and ground truth, if available), just follow the instructions from [this Wiki page](https://github.com/GarciaDelMolino/CES/wiki/How-to-execute-CES-on-your-own-lifelog(s))
 
 ### How to use VCP for you own application:
-Instructions can be found in [this Wiki page](https://github.com/GarciaDelMolino/CES/wiki/How-to-use-VCP-for-you-own-application)
+The Visual Context Predictor can be used for many applications, such as retrieval, activity detection from low time resolution videos, and summarization. Pointers to how to re-train it for your own data can be found in [this Wiki page](https://github.com/GarciaDelMolino/CES/wiki/How-to-use-VCP-for-you-own-application)
+
 
 
 ## What's in this repo?
