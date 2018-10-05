@@ -44,6 +44,12 @@ The repository is organized as follows:
 ## Citation:
 If you found this code or the R3 dataset useful, please cite the following publication:
 
-    Ana García del Molino, Joo-Hwee Lim, and Ah-Hwee Tan. 2018.
-    Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams.
-    In Proceedings of ACM Multimedia conference (ACMMM’18). ACM, New York, NY, USA.
+    @inproceedings{gifs2017highlights,
+       author = {Garcia del Molino, Ana and Lim, Joo-Hwee and Tan, Ah-Hwee},
+       title = {{Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams.}},
+       booktitle = {Proceedings of the 2018 ACM on Multimedia Conference},
+       series = {MM '18},
+       year = {2018},
+       publisher = {ACM},
+       address = {New York, NY, USA}
+    } 
