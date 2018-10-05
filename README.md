@@ -1,8 +1,17 @@
 # Contextual Event Segmentation
 
-This repository includes the functions needed to run Contextual Event Segmentation as presented in our paper "Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams."
+This repository includes the functions needed to run Contextual Event Segmentation as presented in our paper ["Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams."](https://garciadelmolino.github.io/ces.html)
 
-The data used to train the model, as well as the model weights, can be found [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea).
+## What is Contextual Event Segmentation (CES)? Why is it useful?
+Given a continuous stream of photos, we, as humans, would identify the start of an event if the new frame differs from the expectation we have generated. The proposed model is analogous to such intuitive framework of perceptual reasoning. CES consists of two modules:
+
+1. the Visual Context Predictor (VCP), an LSTM network that predicts the visual context of the upcoming frame, either in the past or in the future depending on the sequence ordering. An auto-encoder architecture is used to train VCP with the objective of reaching minimum prediction mse.
+2. the event boundary detector, that compares the visual context at each time-step given the frame sequence from the past, with the visual context given the sequence in the future.
+
+#### CES in action for one example lifelog from EDUB-Seg:
+![example users in our dataset](https://garciadelmolino.github.io/files/CES-qualitative.png)
+
+CES is able to ignore occasional occlusions as long as the different points of view span less frames than CES’ memory span (A). It is also capable of detecting boundaries that separate heterogeneous events such as riding a bike on the street and shopping at the supermarket (C, D). Most of the boundaries not detected by CES correspond to events that take place within the same physical space (B) and short transitions (C, D), e.g. parking the bike.
 
 
 ## Steps to reproduce:
@@ -10,6 +19,9 @@ The data used to train the model, as well as the model weights, can be found [he
 2. Download the model architecture and weights [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea)
 3. Change `PATH_VCP` in `demo.py` to match the location of your downloaded model architecture and weights.
 4. Run `demo.py`
+
+The dataset used to train the model, as well as the model weights, can be found [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea).
+
 
 ### How to execute CES on your own lifelog(s):
 If you want to execute CES on your own lifelogs (the images and ground truth, if available), just follow the instructions from [this Wiki page](https://github.com/GarciaDelMolino/CES/wiki/How-to-execute-CES-on-your-own-lifelog(s))
