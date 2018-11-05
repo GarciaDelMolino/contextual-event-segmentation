@@ -44,12 +44,11 @@ The repository is organized as follows:
 ## Citation:
 If you found this code or the R3 dataset useful, please cite the following publication:
 
-    @inproceedings{gifs2017highlights,
-       author = {Garcia del Molino, Ana and Lim, Joo-Hwee and Tan, Ah-Hwee},
-       title = {{Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams.}},
-       booktitle = {Proceedings of the 2018 ACM on Multimedia Conference},
-       series = {MM '18},
-       year = {2018},
-       publisher = {ACM},
-       address = {New York, NY, USA}
-    } 
+    @inproceedings{garcia2018predicting,
+      title={{Predicting Visual Context for Unsupervised Event Segmentation in Continuous Photo-streams}},
+      author={Garcia del Molino, Ana and Lim, Joo-Hwee and Tan, Ah-Hwee},
+      booktitle={2018 ACM Multimedia Conference on Multimedia Conference},
+      pages={10--17},
+      year={2018},
+      organization={ACM}
+    }
