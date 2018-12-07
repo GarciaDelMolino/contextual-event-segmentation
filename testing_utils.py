@@ -3,6 +3,8 @@ from scipy.signal import argrelmax
 from scipy.spatial.distance import cosine
 import csv
 import pandas as pd
+import sys
+eps = sys.float_info.epsilon
 
 
 def get_visual_context(model, params, features):
@@ -196,5 +198,5 @@ class evaluation_measures(object):
         if self.recall is None and self.precision is None:
             self.get_precision()
             self.get_recall()
-        return 2.*self.precision*self.recall / max(1, self.recall +
+        return 2.*self.precision*self.recall / max(eps, self.recall +
                                                    self.precision)
