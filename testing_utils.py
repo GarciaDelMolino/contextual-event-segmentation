@@ -155,6 +155,7 @@ class evaluation_measures(object):
             raise ValueError('Your inputs are not of the right kind!')
 
         gt = self.fix_boundaries(gt)
+        p = self.fix_boundaries(p)
         Neg = total_frames - len(gt)
 
         """compute scores:"""
