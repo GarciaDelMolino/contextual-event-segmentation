@@ -41,7 +41,7 @@ def init_model(model_path, epoch=None):
 
 def params_VCP():
     """set VCP parameters to reasonable defaults"""
-    params = {'input_dim': [2048],
+    params = {'input_dim': 2048,
               'representation_dim': [1024],
               'timesteps': (10, 10)}
 
