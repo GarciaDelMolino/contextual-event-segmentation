@@ -80,7 +80,7 @@ class VCP(object):
     
             # define model placeholders and architecture:
             self.cond_prediction_model(timesteps, input_dim,
-                                       encoding_dim, encoding_layers,
+                                       encoding_dim[-1], encoding_layers,
                                        decoding_layers)
 
             if save_filepath is not None:
