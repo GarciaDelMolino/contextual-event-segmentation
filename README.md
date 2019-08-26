@@ -16,11 +16,11 @@ CES is able to ignore occasional occlusions as long as the different points of v
 
 ## Steps to reproduce:
 1. Clone this repo, create a `test_data` folder within it, and extract [this test lifelog and GT from EDUB-Seg](https://drive.google.com/open?id=1vBDdLR1IUXOSMB2p1gUlxpB5bJVW0fvE) to it.
-2. Download the model architecture and weights [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea)
+2. Download the model architecture and weights [here](https://data.mendeley.com/datasets/ktps5my69g/1)
 3. Change `PATH_VCP` in `demo.py` to match the location of your downloaded model architecture and weights.
 4. Run `demo.py`
 
-The dataset used to train the model, as well as the model weights, can be found [here](https://data.mendeley.com/datasets/ktps5my69g/draft?a=8e91b5ba-f316-4818-a625-e0ab08d4c5ea).
+The dataset used to train the model, as well as the model weights, can be found [here](https://data.mendeley.com/datasets/ktps5my69g/1).
 
 
 ### How to execute CES on your own lifelog(s):
